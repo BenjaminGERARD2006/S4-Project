@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Study Bot - Choose Subject</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="card">
+    <h1>What do you want to study?</h1>
+    <p class="subtitle">Type any subject or topic — the bot will quiz you and explain concepts on it.</p>
+
+    <div id="errorBox" class="error" style="display:none;"></div>
+
+    <input type="text" id="subject" placeholder="e.g. Java OOP, French verbs, Distributed Systems...">
+    <button id="startBtn">Start studying</button>
+
+    <div class="link-row">
+      <a href="history.html">View past sessions</a> &nbsp;|&nbsp;
+      <a href="#" id="logoutLink">Log out</a>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    const userToken = localStorage.getItem("user_token");
+    if (!userToken) window.location.href = "login.html";
+
+    document.getElementById("logoutLink").addEventListener("click", (e) => {
+      e.preventDefault();
+      localStorage.clear();
+      window.location.href = "login.html";
+    });
+
+    document.getElementById("startBtn").addEventListener("click", async () => {
+      const subject = document.getElementById("subject").value.trim();
+      const errorBox = document.getElementById("errorBox");
+      errorBox.style.display = "none";
+
+      if (!subject) {
+        errorBox.textContent = "Please enter a subject.";
+        errorBox.style.display = "block";
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/sessions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_token: userToken, subject }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Could not start session");
+
+        localStorage.setItem("session_token", data.session_token);
+        localStorage.setItem("subject", data.subject);
+        window.location.href = "chat.html";
+      } catch (err) {
+        errorBox.textContent = err.message;
+        errorBox.style.display = "block";
+      }
+    });
+  </script>
+</body>
+</html>

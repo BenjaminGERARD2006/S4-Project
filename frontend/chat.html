@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Study Bot - Chat</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="topbar">
+    <a href="subject.html">&larr; Change subject</a>
+    <span id="subjectLabel"></span>
+    <a href="history.html">History</a>
+  </nav>
+
+  <div class="card chat-card">
+    <h1 id="chatTitle">Studying...</h1>
+    <div id="messages"></div>
+    <div class="chat-input-row">
+      <input type="text" id="messageInput" placeholder="Type your answer or question...">
+      <button id="sendBtn">Send</button>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    const sessionToken = localStorage.getItem("session_token");
+    const subject = localStorage.getItem("subject");
+    if (!sessionToken) window.location.href = "subject.html";
+
+    document.getElementById("subjectLabel").textContent = subject;
+    document.getElementById("chatTitle").textContent = `Studying: ${subject}`;
+
+    const messagesDiv = document.getElementById("messages");
+    const input = document.getElementById("messageInput");
+    const sendBtn = document.getElementById("sendBtn");
+
+    function appendMessage(role, content) {
+      const div = document.createElement("div");
+      div.className = `msg ${role}`;
+      div.textContent = content;
+      messagesDiv.appendChild(div);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    async function loadHistory() {
+      try {
+        const res = await fetch(`${API_BASE}/history/${sessionToken}`);
+        const data = await res.json();
+        if (res.ok) {
+          data.messages.forEach(m => appendMessage(m.role, m.content));
+        }
+      } catch (err) {
+        console.error("Could not load history", err);
+      }
+    }
+
+    async function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+      appendMessage("user", text);
+      input.value = "";
+      sendBtn.disabled = true;
+
+      try {
+        const res = await fetch(`${API_BASE}/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_token: sessionToken, message: text }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Chat failed");
+        appendMessage("assistant", data.reply);
+      } catch (err) {
+        appendMessage("assistant", `[Error: ${err.message}]`);
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+
+    sendBtn.addEventListener("click", sendMessage);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") sendMessage();
+    });
+
+    loadHistory();
+  </script>
+</body>
+</html>

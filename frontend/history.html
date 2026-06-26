@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Study Bot - History</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="topbar">
+    <a href="subject.html">&larr; Back</a>
+    <span>Session history</span>
+    <span></span>
+  </nav>
+
+  <div class="card chat-card">
+    <h1>Past Session</h1>
+    <div id="messages"></div>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    const sessionToken = localStorage.getItem("session_token");
+    const messagesDiv = document.getElementById("messages");
+
+    if (!sessionToken) {
+      messagesDiv.innerHTML = "<p>No session yet — start one from the subject page.</p>";
+    } else {
+      fetch(`${API_BASE}/history/${sessionToken}`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data.messages || data.messages.length === 0) {
+            messagesDiv.innerHTML = "<p>No messages yet in this session.</p>";
+            return;
+          }
+          data.messages.forEach(m => {
+            const div = document.createElement("div");
+            div.className = `msg ${m.role}`;
+            div.textContent = m.content;
+            messagesDiv.appendChild(div);
+          });
+        })
+        .catch(() => {
+          messagesDiv.innerHTML = "<p>Could not load history.</p>";
+        });
+    }
+  </script>
+</body>
+</html>

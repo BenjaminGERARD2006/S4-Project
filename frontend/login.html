@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Study Bot - Login</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="card">
+    <h1 id="formTitle">Log in</h1>
+    <p class="subtitle">Your AI-powered study & flashcard partner</p>
+
+    <div id="errorBox" class="error" style="display:none;"></div>
+
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button id="submitBtn">Log in</button>
+
+    <div class="link-row">
+      <span id="toggleText">Don't have an account?</span>
+      <a href="#" id="toggleLink">Sign up</a>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    let mode = "login"; // or "signup"
+
+    const formTitle = document.getElementById("formTitle");
+    const submitBtn = document.getElementById("submitBtn");
+    const toggleText = document.getElementById("toggleText");
+    const toggleLink = document.getElementById("toggleLink");
+    const errorBox = document.getElementById("errorBox");
+
+    toggleLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      mode = mode === "login" ? "signup" : "login";
+      formTitle.textContent = mode === "login" ? "Log in" : "Sign up";
+      submitBtn.textContent = mode === "login" ? "Log in" : "Sign up";
+      toggleText.textContent = mode === "login" ? "Don't have an account?" : "Already have an account?";
+      toggleLink.textContent = mode === "login" ? "Sign up" : "Log in";
+      errorBox.style.display = "none";
+    });
+
+    submitBtn.addEventListener("click", async () => {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+      errorBox.style.display = "none";
+
+      if (!username || !password) {
+        showError("Please fill in both fields.");
+        return;
+      }
+
+      try {
+        if (mode === "signup") {
+          const res = await fetch(`${API_BASE}/signup`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || "Signup failed");
+          // After successful signup, switch UI back to login mode
+          mode = "login";
+          formTitle.textContent = "Log in";
+          submitBtn.textContent = "Log in";
+          toggleText.textContent = "Don't have an account?";
+          toggleLink.textContent = "Sign up";
+          showError("Signup successful! Please log in.", true);
+        } else {
+          const res = await fetch(`${API_BASE}/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || "Login failed");
+
+          localStorage.setItem("user_token", data.user_token);
+          localStorage.setItem("username", data.username);
+          window.location.href = "subject.html";
+        }
+      } catch (err) {
+        showError(err.message);
+      }
+    });
+
+    function showError(msg, isSuccess = false) {
+      errorBox.textContent = msg;
+      errorBox.style.color = isSuccess ? "#2e7d32" : "#c0392b";
+      errorBox.style.display = "block";
+    }
+  </script>
+</body>
+</html>
